@@ -1,4 +1,6 @@
 *.exe
 *.hi
 *.o
+*/__pycache__/*
+*/*/__pycache__/*
 ignore_files/*
