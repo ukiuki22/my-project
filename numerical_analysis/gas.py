@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from functools import reduce 
 
 #気体のモデル
-N  = 10000
+N  = 1000
 L  = 1.0
 
 dt = 0.05
@@ -43,27 +43,27 @@ def xDistribute(X):
   n = lambda x : x < 0 
   return len( list( filter( p ,X1)))
 
+#壁にぶつかる粒子の数
 def press(X):
-  p = lambda x : abs(x)> L
-  return len( list( filter( p ,X)))
+  X1 = [X[2*i  ] for i in rN]
+  Y1 = [X[2*i+1] for i in rN]
+  p = lambda x,y: (abs(x)> L)&(abs(x)> L)
+  return len( list(filter( (lambda x : x==True),list( map( p ,X1 ,Y1)) )))
+
+
 
 
 def main(num):
   X = X0
   V = V0
-
-  dis =  [0 for i in range(20)]
   pres = [0 for i in range(20)]
-
   for i in range(num):
     X1 = update(X,V)
 #Outputs
-    del  dis[0]
-    del pres[0]
-    dis  +=[xDistribute(X)]
-    pres +=[press(X)]
+    #del pres
+    pres.append(press(X1))
 
-    plotf(i,X1,[]) #[dis,pres])
+    plotf(i,X1,pres)
 #次にデータを渡す
     X  = X1
     V = wall(X1,V)
