@@ -2,6 +2,9 @@
 *.exe
 *.hi
 *.o
+*.csv
+*.vtk
 */__pycache__/*
 */*/__pycache__/*
 ignore_files/*
+*/*/data*
