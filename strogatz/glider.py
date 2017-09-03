@@ -3,16 +3,18 @@ import numpy as np
 from scipy.integrate import odeint
 import matplotlib.pyplot as plt
 
+plt.style.use('ggplot')
+
 #equation
 def func(v_theta, t):
-    v     = v_theta[0]
+    v     = v_theta[0] #+0.1
     theta = v_theta[1]
-    D = 0
+    D = 0.1
     return [-np.sin(theta)-D*v**2,(-np.cos(theta)+v**2)/v]
 
 #execute
 def v_theta(init):
-    t = np.arange(0, 3, 0.01)
+    t = np.arange(0, 6, 0.01)
     v_theta = odeint(func, init, t)
     return v_theta
 
@@ -52,12 +54,12 @@ def plot_some_initial_UV(init_v,length,iteration):
     return plt.show()
 
 # v_theta 複数の初期条件を同時にプロット
-#   plot_some_initial_vtheta(1,0.1,20)
-def plot_some_initial_vtheta(init_v,length,iteration):
+#   plot_some_initial_vt(1,0.1,20)
+def plot_some_initial_vth(init_v,length,iteration):
     gliders=[v_theta([init_v+length*i,0]) for i in range(iteration)]
     for i in range(iteration):
         plt.plot(gliders[i][:,1],gliders[i][:,0])
     return plt.show()
 
 if __name__ == '__main__':
-    plot_some_initial_XY(0.5,0.2,10)
+    plot_some_initial_XY(1.0,0.3,6)
