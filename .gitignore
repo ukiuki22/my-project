@@ -8,3 +8,4 @@
 */*/__pycache__/*
 ignore_files/*
 */*/data*
+numerical_analysis/relaxlup/makeModel.py
