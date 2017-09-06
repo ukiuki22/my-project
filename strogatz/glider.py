@@ -62,4 +62,4 @@ def plot_some_initial_vth(init_v,length,iteration):
     return plt.show()
 
 if __name__ == '__main__':
-    plot_some_initial_XY(1.0,0.3,6)
+    plot_some_initial_XY(0.6,0.4,6)
