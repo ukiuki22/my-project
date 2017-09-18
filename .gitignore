@@ -8,4 +8,6 @@
 */*/__pycache__/*
 ignore_files/*
 */*/data*
+numerical_analysis/emden
+pokemon/csv/*
 numerical_analysis/relaxlup/makeModel.py
