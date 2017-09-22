@@ -10,6 +10,8 @@ not_so  = pd.read_csv('./csv/type_notso.csv',header = None)
 no_dmg = pd.read_csv('./csv/type_0.csv',header=None)
 
 ind = lambda n, df : True if len(df)== n else False
+df2list = lambda df : list (map( (lambda arr : list(arr)) , df.values))
+
 
 #print( character )
 
@@ -34,6 +36,7 @@ def pokemon_type():
             if (ind(0,search) == True): print('No hits, please try again')
 
         print('The type of this Pokemon is...')
+        
         print(search.values[0][1:4])
         return search.values[0][1:4]
 
@@ -44,10 +47,28 @@ def pokemon_type_easy(name):
 def type2list(t_kana):
     base = [1.0 for i in range(18)]
     if type(t_kana)== str :
+        # type番号
         num = int(typ[typ['kana'].str.contains(t_kana)].values[0][0])
-        twic = list(eff.values[num-1]) #.remove(0)
-        half = list(not_so.values[num-1]) #.remove(0)
-        zero = list(no_dmg.values[num-1])#.remove(0)
+        # type-1番目にtypeで攻撃しときの相性が格納
+        print(num)
+
+        twic_rev = df2list(eff)
+        half_rev = df2list(not_so)
+        zero_rev = df2list(no_dmg)
+
+        twic = []
+        half = []
+        zero = []
+
+        for i in range(18):
+    # タイプIの技でタイプNumに攻撃したらこうかはばつぐん！ならタイプNumの弱点リストにタイプIを追加
+            if num in twic_rev[i]: twic+=[i+1]
+            if num in half_rev[i]: half+=[i+1]
+            if num in zero_rev[i]: zero+=[i+1]
+
+        print(twic)
+        print(half)
+        print(zero)
         #  倍率に変換
         for i in range(18):
             if (i+1) in twic : base[i]=base[i]*2
@@ -77,27 +98,23 @@ def aishos(infos):
 
     df = pd.DataFrame(idx+data)
     print ( df)
-    df.to_csv('test.txt',index=False,header=None,sep='\t')
+    df.to_csv('test.csv',index=False,header=None,sep=',')
 
 
 
 if __name__ == '__main__':
+
+
+
 #    print(pokemon_type()[0])
 #    print(type2list('ノーマル'))
-    # aisho('',['フェアリー',0])
+    #  aishos([['+++','フェアリー',0]])
     # aisho('',[0,'ゴースト'])
     # aisho('',['フェアリー','ゴースト'])
 
-    t = pokemon_type_easy('ミミッキュ')
+      t1 = pokemon_type_easy('ミミッキュ')
+      t2 = pokemon_type_easy('カプ・テテフ')
 #    types = pokemon_type_easy('カビゴン')
-    # aisho(t)
-    aishos([t,t])
-
-
-
-
-
-        # 検索が複数ヒットした場合、番号と名前を表示
-        # 番号を入力（全角でおk）
-        # ヒットしなかった場合やりなおし
-        # ひとつに絞れたらタイプを表示
+    #  aisho(t)
+      print(t2)
+      aishos([t1,t2])
