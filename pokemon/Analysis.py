@@ -1,5 +1,7 @@
 import pandas as pd
 import numpy as np
+from datetime import datetime as dt
+# from functools import reduce
 
 pk  = pd.read_csv('./csv/characteristics.csv',encoding="SHIFT-JIS")
 typ = pd.read_csv('./csv/type_list.csv')
@@ -9,39 +11,15 @@ eff    = pd.read_csv('./csv/type_effective.csv',header = None)
 not_so  = pd.read_csv('./csv/type_notso.csv',header = None)
 no_dmg = pd.read_csv('./csv/type_0.csv',header=None)
 
+want2serch = pd.read_csv('./input.csv',header=None)
+pks = list(map(lambda x:x[0],want2serch.values))
+
+
 ind = lambda n, df : True if len(df)== n else False
 df2list = lambda df : list (map( (lambda arr : list(arr)) , df.values))
+id_pk = lambda name : pk.query('name ==  \"'+name+'\" ').values[0]
+id_pks= list( map(id_pk,pks))
 
-
-#print( character )
-
-#Pokemonの名前を入力するとそのPokemonのタイプを返す
-# def pokemon_type():
-        # print(' Input Pokemon you want to search in KATAKANA ')
-        # indicator = True
-#
-        # while indicator == True:
-            # name = str(input())
-            # search = pk[pk['name'].str.contains(name)]
-            # indicator = ind(0,search)
-            # if (indicator == True): print('No hits, please try again')
-#
-        # while (ind(1,search)==False) :
-            # print('you mean these Pokemon?')
-            # search1 = search.loc[:,['number','name']]
-            # print(search1)
-            # print('choose a number you want to search')
-            # number = input() #全角、ハイフン未対応
-            # search = search1[search1['number'].str.contains(number)]
-            # if (ind(0,search) == True): print('No hits, please try again')
-#
-        # print('The type of this Pokemon is...')
-#
-        # print(search.values[0][1:4])
-        # return search.values[0][1:4]
-
-def pokemon_type_easy(name):
-    return pk[pk['name'].str.contains(name)].values[0][1:4]
 
 # タイプを一つ受け取って、それぞれのタイプとの相性を表すリストを返す
 def type2list(t_kana):
@@ -76,35 +54,30 @@ def type2list(t_kana):
             if (i+1) in zero : base[i]=base[i]*0
     return base
 
-# 表を出力。カナでタイプ受け取り info=[name,type1,type2]
+# 表を出力。カナでタイプ受け取り info=pokemonid
 def aisho(info):
-    lis1 = type2list(info[1])
-    lis2 = type2list(info[2])
+    lis1 = type2list(info[2])
+    lis2 = type2list(info[3])
     lis = list(map(lambda x,y:x*y ,lis1,lis2))
-    marks = [info[0]]
+    marks = [info[1]]
     for i in range(18):
         if   lis[i]== 1.0 : marks += [' ']
         elif lis[i]== 2.0 : marks += ['○']
-        elif lis[i]== 4.0 : marks += ['●']
-        elif lis[i]== 0.5 : marks += ['▲']
-        elif lis[i]== 0.25: marks += ['□']
-        elif lis[i]== 0.0 : marks += ['x']
+        elif lis[i]== 4.0 : marks += ['◎']
+        elif lis[i]== 0.5 : marks += ['△']
+        elif lis[i]== 0.25: marks += ['▲']
+        elif lis[i]== 0.0 : marks += ['×']
         else :marks +=['erorr']
     return marks
 
-def aishos(infos):
+def diffence_aisho(infos):
     idx = [['なまえ']+list(typ['kanji'])]
     data = [aisho(infos[i]) for i in range(len(infos))]
-    return idx+data
-
     df = pd.DataFrame(idx+data)
     print ( df)
-    df.to_csv('test.csv',index=False,header=None,sep=',')
+    nowtime = dt.now().strftime('%m%d_%H%M%S')
+    df.to_csv(nowtime+'.csv',index=False,header=None,sep=',')
+    return idx+data
 
 
-
-if __name__ == '__main__':
-      t1 = pokemon_type_easy('ミミッキュ')
-      t2 = pokemon_type_easy('カプ・テテフ')
-      print(t2)
-      aishos([t1,t2])
+print(diffence_aisho(id_pks))
