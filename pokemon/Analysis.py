@@ -44,7 +44,6 @@ typ = pd.read_csv('./csv/type_list.csv')
 eff    = pd.read_csv('./csv/type_effective.csv',header = None)
 not_so  = pd.read_csv('./csv/type_notso.csv',header = None)
 no_dmg = pd.read_csv('./csv/type_0.csv',header=None)
-
 # ターゲットとなるポケモンの名前
 want2use = pks('./want2use.csv')
 top20    = pks('./top20_s6.csv')
@@ -83,6 +82,8 @@ def dfc_type2list(t_kana):
             if (i+1) in zero : base[i]=base[i]*0
     return base
 
+# dfc_type2list('フェアリー')
+# dfc_type2list('ゴースト')
 # csv出力
 def export_diffence_aisho(infos):
     # 表を出力。カナでタイプ受け取り info=pokemonid
@@ -92,58 +93,70 @@ def export_diffence_aisho(infos):
         lis = list(map(lambda x,y:x*y ,lis1,lis2))
         marks = [info[1]]
         for i in range(18):
-            if   lis[i]== 1.0 : marks += [' ']
+            if   lis[i]== 1.0 : marks += ['-']
             elif lis[i]== 2.0 : marks += ['○']
             elif lis[i]== 4.0 : marks += ['◎']
             elif lis[i]== 0.5 : marks += ['△']
             elif lis[i]== 0.25: marks += ['▲']
             elif lis[i]== 0.0 : marks += ['×']
             else :marks +=['erorr']
-            return marks
+        return marks
     idx = [['なまえ']+list(typ['kanji'])]
     data = [dfc_aisho(infos[i]) for i in range(len(infos))]
+    # print(dfc_aisho(infos[0]))
     df = pd.DataFrame(idx+data)
     print ( df)
     nowtime = dt.now().strftime('%m%d_%H%M%S')
     df.to_csv(nowtime+'.csv',index=False,header=None,sep=',')
     return idx+data
 
+# export_diffence_aisho([top20[0]])
+
+
 # 自分と相手のポケモンを選んでタイプ相性で評価
 def eval_by_type(pokemon1,pokemon2):
 
     zipWith_ = lambda a : [a[0][i]*a[1][i] for i in range(len(a[0]))]
     # 自ポケ受け相性のリスト、タイプ番号
-    dfc1 = zipWith_( list( map(dfc_type2list,types(pokemon1))) ) + [1.0,1.0]
+    dfc1 = zipWith_( list( map(dfc_type2list,types(pokemon1))) ) + [1.0]
     num1 = [(typ[typ['kana'].str.contains(types(pokemon1)[i])].values[0][0]) for i in range(2)]
-    # 敵ポケ受け相性のリスト、タイプ番号 XXX:単タイプのときバグが発生するかも↓
-    dfc2 = zipWith_( list( map(dfc_type2list,types(pokemon2))) ) + [1.0,1.0]
+    # 敵ポケ受け相性のリスト、タイプ番号
+    dfc2 = zipWith_( list( map(dfc_type2list,types(pokemon2))) ) + [1.0]
     num2 = [(typ[typ['kana'].str.contains(types(pokemon2)[i])].values[0][0]) for i in range(2)]
 
-    print('dfc1')
-    print(dfc1[18])
-    print(num2)
+    # print('dfc1')
+    # print(dfc1)
+    # print(dfc2)
+    # print(num1)
+    # print(num2)
     # 相手のtype1,type2の技で攻撃された時のそれぞれの相性
-    chem21 = (dfc1[num2[0]],dfc1[num2[1]])
-    chem12 = (dfc2[num1[0]],dfc2[num1[1]])
+    chem21 = (dfc1[num2[0]-1],dfc1[num2[1]-1])
+    chem12 = (dfc2[num1[0]-1],dfc2[num1[1]-1])
     # 評価関数
     def eval_type(a,b,c,d) :
-        if a == 0 : a = 2**(-5)
-        if b == 0 : b = 2**(-5)
-        if c == 0 : c = 2**(-5)
-        if d == 0 : d = 2**(-5)
+        if a == 0 : a = 2**(-3)
+        if b == 0 : b = 2**(-3)
+        if c == 0 : c = 2**(-3)
+        if d == 0 : d = 2**(-3)
         return np.log2(a*b/c/d)
 
-    print(name(pokemon1),name(pokemon2))
-    print(chem12,chem21)
+    # print(name(pokemon1),name(pokemon2))
+    # print(chem12,chem21)
 
-    return  eval_type(dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
+    return  eval_type(chem12[0],chem12[1],chem21[0],chem21[1]) #dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
+
+#  PTポケモンと仮想敵ポケモンのタイプ評価リスト
+def evaled_df(pokemon1s,pokemon2s):
+        eval_list = [[eval_by_type(pokemon1s[i],pokemon2s[j]) for i in ranlen(pokemon1s) ]for j in ranlen(pokemon2s)]
+        idx = [name(pokemon2s[i]) for i in ranlen(pokemon2s)]
+        col = [name(pokemon1s[i]) for i in ranlen(pokemon1s)]
+        return pd.DataFrame(eval_list,index=idx,columns=col)
+
+
 
 if __name__ == '__main__':
-    # columnsをトップメタたちにする
-    eval_list = [[eval_by_type(top20[i],top20[j]) for i in ranlen(top20) ]for j in ranlen(top20)]
-    idx = [name(top20[i]) for i in ranlen(top20)]
-    df = pd.DataFrame(eval_list,index=idx,columns=idx)
-    nowtime = dt.now().strftime('%m%d_%H%M%S')
-    df.to_csv(nowtime+'.csv',sep=',')
-
-    # print(id_pks[2])
+    df = evaled_df(standby,top20)
+    # export_diffence_aisho([top20[0],standby[0]])
+    print(df.where(df >= 0))
+    # nowtime = dt.now().strftime('%m%d_%H%M%S')
+    # df.to_csv(nowtime+'.csv',sep=',')
