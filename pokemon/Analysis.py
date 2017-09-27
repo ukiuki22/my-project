@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 from datetime import datetime as dt
 from functools import reduce
+from itertools import combinations,product
 
 # 各ポケモンの情報を読み込み
 pk  = pd.read_csv('./csv/characteristics.csv',encoding="SHIFT-JIS")
@@ -39,6 +40,9 @@ name    = lambda pokemon : pokemon[1]
 ranlen  = lambda lis     : range(len(lis))
 judge   = lambda n,lis   : list (map(  (lambda n: n>0 ) ,lis))
 trues   = lambda lis     : reduce(lambda x,y:x+y, list(map(lambda a : 1 if a==True else 0, lis)))
+comb    = lambda lis,n   : list(list(map(list,list(combinations(lis,n)))))
+# want2use menbers , standby menbars から　考えられる全ての組み合わせを出力
+jointPTNs  = lambda lis1,lis2,n1,n2 :list( map( lambda tap: tap[0]+tap[1],list(product(comb(lis1,n1),comb(lis2,n2)))))
 # タイプの情報
 typ = pd.read_csv('./csv/type_list.csv')
 # N行目に該当するタイプの相性、数が足りないものは0で埋めた
@@ -157,15 +161,24 @@ def evaled_df(pokemon1s,pokemon2s):
 # 任意の敵にたいしてeval>0となるポケモンが少なくとも1匹以上いればOK
 def eval_PT(PT,Env):
     df = evaled_df(PT,Env)
-    print(df.where(df<=0))
-    lis = df2list(df)
-    judges=trues([any(judge(0,lis[i])) for i in ranlen(lis)])
-    # print(judges)
-    return df.where(df<=0).dropna().index #len(lis)-judges
+    print(df)
+    caution = df.where(df<=0).dropna().index
+    return (len(caution),list(caution))
+
 
 if __name__ == '__main__':
-    a = eval_PT(standby,top20)
-    print(a)
+    fixed = ['a','b','c']#want2use
+    help_ = ['1','2','3']#standby
+    print(help_)
+    allPattarns1 = comb(help_,2) #list(list(map(list,list(combinations(help_,3)))))
+    allPattarns2 = list(list(map(list,list(combinations(fixed,3)))))
+    print(allPattarns1)
+    print(allPattarns2)
+    # testMembers = list(map(lambda lis: fixed+lis, allPattarns))
+    testMembers = list( map( lambda tap: tap[0]+tap[1],list(product(allPattarns1,allPattarns2))))
+    print(testMembers)
+    print(jointPTNs(help_,fixed,2,3))
+    # a = eval_PT(standby,top20)
 
 
 
