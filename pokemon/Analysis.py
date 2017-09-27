@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 from datetime import datetime as dt
-# from functools import reduce
+from functools import reduce
 
 # 各ポケモンの情報を読み込み
 pk  = pd.read_csv('./csv/characteristics.csv',encoding="SHIFT-JIS")
@@ -37,7 +37,8 @@ df2list = lambda df      : list (map( (lambda arr : list(arr)) , df.values))
 types   = lambda pokemon : (pokemon[2],pokemon[3])
 name    = lambda pokemon : pokemon[1]
 ranlen  = lambda lis     : range(len(lis))
-
+judge   = lambda n,lis   : list (map(  (lambda n: n>0 ) ,lis))
+trues   = lambda lis     : reduce(lambda x,y:x+y, list(map(lambda a : 1 if a==True else 0, lis)))
 # タイプの情報
 typ = pd.read_csv('./csv/type_list.csv')
 # N行目に該当するタイプの相性、数が足りないものは0で埋めた
@@ -152,11 +153,22 @@ def evaled_df(pokemon1s,pokemon2s):
         col = [name(pokemon1s[i]) for i in ranlen(pokemon1s)]
         return pd.DataFrame(eval_list,index=idx,columns=col)
 
-
+# 環境に対するパーティーの評価　返り値はIntで任意のPT内ポケモンでeval<0となった敵の数(=相性がどのポケモンでも有利にならない敵の数)
+# 任意の敵にたいしてeval>0となるポケモンが少なくとも1匹以上いればOK
+def eval_PT(PT,Env):
+    df = evaled_df(PT,Env)
+    print(df.where(df<=0))
+    lis = df2list(df)
+    judges=trues([any(judge(0,lis[i])) for i in ranlen(lis)])
+    # print(judges)
+    return df.where(df<=0).dropna().index #len(lis)-judges
 
 if __name__ == '__main__':
-    df = evaled_df(standby,top20)
+    a = eval_PT(standby,top20)
+    print(a)
+
+
+
     # export_diffence_aisho([top20[0],standby[0]])
-    print(df.where(df >= 0))
     # nowtime = dt.now().strftime('%m%d_%H%M%S')
     # df.to_csv(nowtime+'.csv',sep=',')
