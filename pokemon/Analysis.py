@@ -163,24 +163,31 @@ def eval_PT(PT,Env):
     df = evaled_df(PT,Env)
     #NOTE : ここのイコールはとったらeval=0も許容
     caution = df.where(df<=0).dropna().index
-    PTmenber = reduce(lambda x,y: x+y ,list( map( lambda arr: list(arr)[1],PT)))
+    PTmenber = reduce(lambda x,y: x+','+y ,list( map( lambda arr: list(arr)[1],PT)))
     # print(PTmenber)
     # print(list( map( lambda arr: list(arr)[1],PT)))
     # return (len(caution),list(caution),PTmenber)
-    return (len(caution),list(caution),PT,PTmenber) #実際に処理するとき
+    return (len(caution),list(caution),PTmenber,PT) #実際に処理するとき
 
 # Eval_PTの結果のリストを引数にとり、敵の数が少ない順に並び替え、不利な敵がN個以下のPTの評価表を出力
 # def output_eval_PT(allevals,n):
 
 if __name__ == '__main__':
-    allPattarns = jointPTNs(want2use,standby,2,3)
-    allEvals = list( map(lambda PT:eval_PT(PT,top20), allPattarns)) #SA(len,teki,PT)
+    allPattarns = jointPTNs(want2use,standby,3,2)
+    # allEvals = list( map(lambda PT:eval_PT(PT,top20), allPattarns)) #SA(len,teki,PT)
     j = 0
-    for i in ranlen(allEvals):
-        if allEvals[i][0]<=3:
+    nowtime = dt.now().strftime('%m%d_%H%M%S')
+    f = open(nowtime+'_partyAnalysis.txt', 'w') # 書き込みモードで開く
+    for i in ranlen(allPattarns):
+        Evaled = eval_PT(allPattarns[i],top20)
+        if Evaled[0]<=3:
+            print(str(i)+'/'+str(len(allPattarns))+'...!')
             j = j + 1
-            nowtime = dt.now().strftime('%m%d_%H%M%S')
-            evaled_df(allEvals[i][2],top20).to_csv(nowtime+'_'+str(allEvals[i][0])+'_'+str(j)+'.csv',sep=',')
+            evaled_df(allPattarns[i],top20).to_csv(nowtime+'_'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')
+            f.write(str(j)+'--'+str(Evaled[:3])+'\n')
+        else:
+            print(str(i)+'/'+str(len(allPattarns)))
+    f.close()
     # a = eval_PT(standby,top20)
 
 
