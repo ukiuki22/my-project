@@ -10,4 +10,6 @@ ignore_files/*
 */*/data*
 numerical_analysis/emden
 pokemon/csv/*
+a/*
+a.zip
 numerical_analysis/relaxlup/makeModel.py
