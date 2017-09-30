@@ -4,6 +4,7 @@
 *.o
 *.csv
 *.vtk
+*.txt
 */__pycache__/*
 */*/__pycache__/*
 ignore_files/*

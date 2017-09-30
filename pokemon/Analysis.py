@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 from datetime import datetime as dt
 from functools import reduce
 from itertools import combinations,product
@@ -30,7 +31,7 @@ def pks(path):
         else:
             output[3]='no'
             return output
-    w2s = list(map(lambda x:x[0],pd.read_csv(path,header=None).values))
+    w2s = list(map(lambda x:x[0],pd.read_csv(path,header=None,comment='#').values))
     return list( map( id_pk, w2s) )
 
 ind     = lambda n, df   : True if len(df)== n else False
@@ -90,13 +91,13 @@ def dfc_type2list(t_kana):
 # dfc_type2list('フェアリー')
 # dfc_type2list('ゴースト')
 # csv出力
-def export_diffence_aisho(infos):
+def export_diffence_aisho(PT,time,coutions,i):
     # 表を出力。カナでタイプ受け取り info=pokemonid
-    def dfc_aisho(info):
-        lis1 = dfc_type2list(info[2])
-        lis2 = dfc_type2list(info[3])
+    def dfc_aisho(pokemon):
+        lis1 = dfc_type2list(pokemon[2])
+        lis2 = dfc_type2list(pokemon[3])
         lis = list(map(lambda x,y:x*y ,lis1,lis2))
-        marks = [info[1]]
+        marks = [pokemon[1]]
         for i in range(18):
             if   lis[i]== 1.0 : marks += ['-']
             elif lis[i]== 2.0 : marks += ['○']
@@ -106,15 +107,16 @@ def export_diffence_aisho(infos):
             elif lis[i]== 0.0 : marks += ['×']
             else :marks +=['erorr']
         return marks
-    idx = [['なまえ']+list(typ['kanji'])]
-    data = [dfc_aisho(infos[i]) for i in range(len(infos))]
+    idx = [['なまえ']+list(typ['kanji'])[:-1]]
+    data = [dfc_aisho(PT[i]) for i in ranlen(PT)]
     # print(dfc_aisho(infos[0]))
     df = pd.DataFrame(idx+data)
-    print ( df)
+    # print ( df)
     nowtime = dt.now().strftime('%m%d_%H%M%S')
-    df.to_csv(nowtime+'.csv',index=False,header=None,sep=',')
+    df.to_csv(time+'/'+str(coutions)+'_'+str(i)+'_aisho.csv',index=False,header=None,sep=',')
     return idx+data
 
+# export_diffence_aisho(standby)
 # export_diffence_aisho([top20[0]])
 
 
@@ -173,21 +175,27 @@ def eval_PT(PT,Env):
 # def output_eval_PT(allevals,n):
 
 if __name__ == '__main__':
-    allPattarns = jointPTNs(want2use,standby,3,2)
-    # allEvals = list( map(lambda PT:eval_PT(PT,top20), allPattarns)) #SA(len,teki,PT)
-    j = 0
+    allPattarns = jointPTNs(want2use,standby,2,4)
+    coutions=1
+
     nowtime = dt.now().strftime('%m%d_%H%M%S')
-    f = open(nowtime+'_partyAnalysis.txt', 'w') # 書き込みモードで開く
+    os.mkdir(nowtime)
+    f = open(nowtime+'/partyAnalysis.txt', 'w') # 書き込みモードで開く
+    j = 0
     for i in ranlen(allPattarns):
+
         Evaled = eval_PT(allPattarns[i],top20)
-        if Evaled[0]<=3:
+        if Evaled[0]<= coutions:
             print(str(i)+'/'+str(len(allPattarns))+'...!')
             j = j + 1
-            evaled_df(allPattarns[i],top20).to_csv(nowtime+'_'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')
+            evaled_df(allPattarns[i],top20).to_csv(nowtime+'/'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')
+            export_diffence_aisho(allPattarns[i],nowtime,Evaled[0],j)
             f.write(str(j)+'--'+str(Evaled[:3])+'\n')
         else:
             print(str(i)+'/'+str(len(allPattarns)))
     f.close()
+    export_diffence_aisho(want2use+standby,nowtime,'all',0)
+
     # a = eval_PT(standby,top20)
 
 
