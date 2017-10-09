@@ -31,6 +31,7 @@ ind     = lambda n, df   : True if len(df)== n else False
 df2list = lambda df      : list (map( (lambda arr : list(arr)) , df.values))
 types   = lambda pokemon : (pokemon[2],pokemon[3])
 name    = lambda pokemon : pokemon[1]
+base_st = lambda pokemon : pokemon[7:13]
 ranlen  = lambda lis     : range(len(lis))
 judge   = lambda n,lis   : list (map(  (lambda n: n>0 ) ,lis))
 trues   = lambda lis     : reduce(lambda x,y:x+y, list(map(lambda a : 1 if a==True else 0, lis)))
@@ -85,7 +86,7 @@ def dfc_type2list(t_kana):
 # dfc_type2list('フェアリー')
 # dfc_type2list('ゴースト')
 # csv出力
-def export_diffence_aisho(PT,time,coutions,i):
+def export_defffence_aisho(PT,time,coutions,i):
     # 表を出力。カナでタイプ受け取り info=pokemonid
     def dfc_aisho(pokemon):
         lis1 = dfc_type2list(pokemon[2])
@@ -110,8 +111,45 @@ def export_diffence_aisho(PT,time,coutions,i):
     df.to_csv(time+'/'+str(coutions)+'_'+str(i)+'_aisho.csv',index=False,header=None,sep=',')#,encoding='shift_jis')
     return idx+data
 
-# export_diffence_aisho(standby)
-# export_diffence_aisho([top20[0]])
+# 自分と相手のポケモンを選んでタイプ相性で評価
+def eval_by_type(pokemon1,pokemon2):
+
+    zipWith_ = lambda a : [a[0][i]*a[1][i] for i in range(len(a[0]))]
+    # 自ポケ受け相性のリスト、タイプ番号
+    dfc1 = zipWith_( list( map(dfc_type2list,types(pokemon1))) ) + [1.0]
+    num1 = [(typ[typ['kana'].str.contains(types(pokemon1)[i])].values[0][0]) for i in range(2)]
+    # 敵ポケ受け相性のリスト、タイプ番号
+    dfc2 = zipWith_( list( map(dfc_type2list,types(pokemon2))) ) + [1.0]
+    num2 = [(typ[typ['kana'].str.contains(types(pokemon2)[i])].values[0][0]) for i in range(2)]
+
+    # print('dfc1')
+    # print(dfc1)
+    # print(dfc2)
+    # print(num1)
+    # print(num2)
+    # 相手のtype1,type2の技で攻撃された時のそれぞれの相性
+    chem21 = (dfc1[num2[0]-1],dfc1[num2[1]-1])
+    chem12 = (dfc2[num1[0]-1],dfc2[num1[1]-1])
+    # 評価関数
+    def eval_type(a,b,c,d) :
+        if a == 0 : a = 2**(-3)
+        if b == 0 : b = 2**(-3)
+        if c == 0 : c = 2**(-3)
+        if d == 0 : d = 2**(-3)
+        return np.log2(a*b/c/d)
+
+    # print(name(pokemon1),name(pokemon2))
+    # print(chem12,chem21)
+
+    return  eval_type(chem12[0],chem12[1],chem21[0],chem21[1]) #dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
+
+#  PTポケモンと仮想敵ポケモンのタイプ評価リスト
+def evaled_df_by_type(pokemon1s,pokemon2s):
+        eval_list = [[eval_by_type(pokemon1s[i],pokemon2s[j]) for i in ranlen(pokemon1s) ]for j in ranlen(pokemon2s)]
+        idx = [name(pokemon2s[i]) for i in ranlen(pokemon2s)]
+        col = [name(pokemon1s[i]) for i in ranlen(pokemon1s)]
+        return pd.DataFrame(eval_list,index=idx,columns=col)
+
 
 
 #ダメージ倍率 こうかが大きい方を選択
@@ -126,6 +164,8 @@ def type_coefficient(pokemon1,pokemon2):
     # num2 = [(typ[typ['kana'].str.contains(types(pokemon2)[i])].values[0][0]) for i in range(2)]
     # chem21 = (dfc1[num2[0]-1],dfc1[num2[1]-1])
     chem12 = (dfc2[num1[0]-1],dfc2[num1[1]-1])
+    # print('vvv')
+    # print(chem12)
     return  max(chem12[0],chem12[1]) #,chem21[0],chem21[1]) #dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
 
 """
@@ -144,9 +184,10 @@ HPの能力値
 HP以外の能力値
 ={(種族値*2+個体値+努力値/4)*レベル/100+5}*性格補正
 """
-dmg  = lambda atk,dif,typ,power : ( 22* power * atk / dif / 50 + 2 ) * 0.85 * 1.5 * typ
+dmg  = lambda atk1,def2,typ12,power : ( 22* power * atk1 / def2 / 50 + 2 ) * 0.85 * 1.5 * typ12
 abt  = lambda x,hp,eV : (2*x+31+eV/4)*0.5+5*(1+hp)
-eval_g = lambda b_atk, b_dif, b_hp, typ : dmg(abt(b_atk,0,252),abt(b_dif,0,252),typ,100)/abt(b_hp,252)
+eval_g = lambda b_atk1, b_def2, b_hp2, typ12 : dmg(abt(b_atk1,0,252),abt(b_def2,0,252),typ12,100)/abt(b_hp2,1,252)
+sp_cor = lambda b_sp1,b_sp2,mimikkyu : (1+mimikkyu) if(b_sp1>b_sp2) else mimikkyu
 
 """
 ポケモン相性評価関数f…お互い攻撃しあったときに自分が瀕死になる前に同じ相手を何匹倒せるかの目安
@@ -156,7 +197,79 @@ eval_g = lambda b_atk, b_dif, b_hp, typ : dmg(abt(b_atk,0,252),abt(b_dif,0,252),
 ＊複数タイプの場合、gが大きくなる方を選ぶ
 ＊物理、特殊どちらでも計算をしてgが大きくなる方を選ぶ
 """
+def eval_function(pokemon1,pokemon2):
+    h1,a1,b1,c1,d1,s1 = base_st(pokemon1)
+    h2,a2,b2,c2,d2,s2 = base_st(pokemon2)
+    typ12 = type_coefficient(pokemon1,pokemon2)
+    typ21 = type_coefficient(pokemon2,pokemon1)
+
+    is_mimikkyu = lambda pokemon : 1 if(name(pokemon)=='ミミッキュ') else 0
+
+    mimi1 = is_mimikkyu(pokemon1)
+    mimi2 = is_mimikkyu(pokemon2)
+
+    fp = eval_g(a1,b2,h2,typ12)*(1/eval_g(a2,b1,h1,typ21) + sp_cor(s1,s2,mimi1) )
+    fs = eval_g(c1,d2,h2,typ12)*(1/eval_g(c2,d1,h1,typ21) + sp_cor(s1,s2,mimi1) )
+    print(typ12)
+    print(mimi1)
+    print(eval_g(a1,b2,h2,typ12))
+    print(eval_g(c1,d2,h2,typ12))
+    print(sp_cor(s1,s2,mimi1))
+    print(fp)
+    print(fs)
+    return max(fp,fs)
+
+def evaled_df(pokemon1s,pokemon2s):
+        eval_list = [[eval_function(pokemon1s[i],pokemon2s[j]) for i in ranlen(pokemon1s) ]for j in ranlen(pokemon2s)]
+        idx = [name(pokemon2s[i]) for i in ranlen(pokemon2s)]
+        col = [name(pokemon1s[i]) for i in ranlen(pokemon1s)]
+        return pd.DataFrame(eval_list,index=idx,columns=col)
+
+
+# 環境に対するパーティーの評価　
+def eval_PT(PT,Env):
+    df = evaled_df(PT,Env)
+    #NOTE : ここのイコールはとったらeval=0も許容
+    caution = df.where(df<=0).dropna().index
+    PTmenber = reduce(lambda x,y: x+','+y ,list( map( lambda arr: list(arr)[1],PT)))
+    # print(PTmenber)
+    # print(list( map( lambda arr: list(arr)[1],PT)))
+    # return (len(caution),list(caution),PTmenber)
+    return (len(caution),PTmenber,list(caution),PT) #実際に処理するとき
 
 
 if __name__ == '__main__':
-    print(max(1,2))
+    #hapinasu de hikaku
+    print(party(1)[2][2:13])
+    print(eval_function(party(1)[2],top20[0]))
+    print(top20[0][2:13])
+    print(eval_function(top20[0],party(1)[2]))
+    # print(evaled_df(party(1),top20))
+    # print(evaled_df_by_type(party(1),[top20[0]]))
+
+
+# Eval_PTの結果のリストを引数にとり、敵の数が少ない順に並び替え、不利な敵がN個以下のPTの評価表を出力
+# def output_eval_PT(allevals,n):
+#
+# if __name__ == '__main__':
+#     allPattarns = jointPTNs(want2use,party(1),1,2)
+#     coutions=8
+#
+#     nowtime = dt.now().strftime('%m%d_%H%M%S')
+#     os.mkdir(nowtime)
+#     f = open(nowtime+'/partyAnalysis.txt', 'w') # 書き込みモードで開く
+#     f.write('# -*- coding: utf-8 -*-\n')
+#     j = 0
+#     for i in ranlen(allPattarns):
+#
+#         Evaled = eval_PT(allPattarns[i],top20)
+#         if Evaled[0]<= coutions:
+#             print(str(i+1)+'/'+str(len(allPattarns))+'...!')
+#             j = j + 1
+#             evaled_df(allPattarns[i],top20).to_csv(nowtime+'/'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')#,encoding='shift_jis')
+#             export_diffence_aisho(allPattarns[i],nowtime,Evaled[0],j)
+#             f.write(str(j)+'--'+str(Evaled[:3])+'\n')
+#         else:
+#             print(str(i)+'/'+str(len(allPattarns)))
+#     f.close()
+#     export_diffence_aisho(party(1),nowtime,'all',0)
