@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 from datetime import datetime as dt
 from functools import reduce
 from itertools import combinations,product
@@ -19,15 +20,7 @@ def pks(path):
             print('you mean these Pokemon?')
             search1 = search.loc[:,['name']]
             print(search1)
-            # print(search1)
-            # print('choose a number you want to search')
-            # number = input() #全角、ハイフン未対応
-            # name = pk.loc[number,['name']]
-            # print(name)
-            # output = pk.query('name ==  \"'+name+'\" ').values[0]
-
         if type(output[3])==str:  return output
-        # たんタイプならば
         else:
             output[3]='no'
             return output
@@ -121,87 +114,49 @@ def export_diffence_aisho(PT,time,coutions,i):
 # export_diffence_aisho([top20[0]])
 
 
-# 自分と相手のポケモンを選んでタイプ相性で評価
-def eval_by_type(pokemon1,pokemon2):
+#ダメージ倍率 こうかが大きい方を選択
+def type_coefficient(pokemon1,pokemon2):
 
     zipWith_ = lambda a : [a[0][i]*a[1][i] for i in range(len(a[0]))]
     # 自ポケ受け相性のリスト、タイプ番号
-    dfc1 = zipWith_( list( map(dfc_type2list,types(pokemon1))) ) + [1.0]
+    # dfc1 = zipWith_( list( map(dfc_type2list,types(pokemon1))) ) + [1.0]
     num1 = [(typ[typ['kana'].str.contains(types(pokemon1)[i])].values[0][0]) for i in range(2)]
     # 敵ポケ受け相性のリスト、タイプ番号
     dfc2 = zipWith_( list( map(dfc_type2list,types(pokemon2))) ) + [1.0]
-    num2 = [(typ[typ['kana'].str.contains(types(pokemon2)[i])].values[0][0]) for i in range(2)]
-
-    # print('dfc1')
-    # print(dfc1)
-    # print(dfc2)
-    # print(num1)
-    # print(num2)
-    # 相手のtype1,type2の技で攻撃された時のそれぞれの相性
-    chem21 = (dfc1[num2[0]-1],dfc1[num2[1]-1])
+    # num2 = [(typ[typ['kana'].str.contains(types(pokemon2)[i])].values[0][0]) for i in range(2)]
+    # chem21 = (dfc1[num2[0]-1],dfc1[num2[1]-1])
     chem12 = (dfc2[num1[0]-1],dfc2[num1[1]-1])
-    # 評価関数
-    def eval_type(a,b,c,d) :
-        if a == 0 : a = 2**(-3)
-        if b == 0 : b = 2**(-3)
-        if c == 0 : c = 2**(-3)
-        if d == 0 : d = 2**(-3)
-        return np.log2(a*b/c/d)
+    return  max(chem12[0],chem12[1]) #,chem21[0],chem21[1]) #dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
 
-    # print(name(pokemon1),name(pokemon2))
-    # print(chem12,chem21)
+"""
+ダメージ評価 g(攻,守)=(お互いレベル50、タイプ一致威力100乱数85で攻撃した時、守に与えるダメージ)／守のHP
+→（攻撃する側から見たら）1回でHPのどれくらいを削れるか
+→（防御する側から見たら）耐えれるターンの逆数
+＊性格補正なし
+＊理想個体、努力値全振り
 
-    return  eval_type(chem12[0],chem12[1],chem21[0],chem21[1]) #dfc2[num1[0]],dfc2[num1[1]],dfc1[num2[0]],dfc1[num2[1]])#_type2list(types(pokemon1)[0])
+与えるダメージ
+={（攻撃側のレベル × 2 ÷ 5 ＋ 2）× 技の威力 × 攻撃側の能力値 ÷ 防御側の能力値 ÷ 50 ＋ 2}
+×乱数（85～100）÷ 100 ×タイプ一致×タイプ相性1×タイプ相性2
 
-#  PTポケモンと仮想敵ポケモンのタイプ評価リスト
-def evaled_df(pokemon1s,pokemon2s):
-        eval_list = [[eval_by_type(pokemon1s[i],pokemon2s[j]) for i in ranlen(pokemon1s) ]for j in ranlen(pokemon2s)]
-        idx = [name(pokemon2s[i]) for i in ranlen(pokemon2s)]
-        col = [name(pokemon1s[i]) for i in ranlen(pokemon1s)]
-        return pd.DataFrame(eval_list,index=idx,columns=col)
+HPの能力値
+=（種族値*2+個体値+努力値/4)*レベル/100+レベル+10
+HP以外の能力値
+={(種族値*2+個体値+努力値/4)*レベル/100+5}*性格補正
+"""
+dmg  = lambda atk,dif,typ,power : ( 22* power * atk / dif / 50 + 2 ) * 0.85 * 1.5 * typ
+abt  = lambda x,hp,eV : (2*x+31+eV/4)*0.5+5*(1+hp)
+eval_g = lambda b_atk, b_dif, b_hp, typ : dmg(abt(b_atk,0,252),abt(b_dif,0,252),typ,100)/abt(b_hp,252)
 
-# 環境に対するパーティーの評価　返り値はIntで任意のPT内ポケモンでeval<0となった敵の数(=相性がどのポケモンでも有利にならない敵の数)
-# 任意の敵にたいしてeval>0となるポケモンが少なくとも1匹以上いればOK
-def eval_PT(PT,Env):
-    df = evaled_df(PT,Env)
-    #NOTE : ここのイコールはとったらeval=0も許容
-    caution = df.where(df<=0).dropna().index
-    PTmenber = reduce(lambda x,y: x+','+y ,list( map( lambda arr: list(arr)[1],PT)))
-    # print(PTmenber)
-    # print(list( map( lambda arr: list(arr)[1],PT)))
-    # return (len(caution),list(caution),PTmenber)
-    return (len(caution),PTmenber,list(caution),PT) #実際に処理するとき
+"""
+ポケモン相性評価関数f…お互い攻撃しあったときに自分が瀕死になる前に同じ相手を何匹倒せるかの目安
+＝  f(自分,相手)
+＝　1回で相手を削る割合　＊（　生き残るターン数　＋　すばやさ補正　(0 or 1) + ミミッキュ　）
+＝　g(自分,相手)＊(1/g(相手,自分)+d(自分,相手))
+＊複数タイプの場合、gが大きくなる方を選ぶ
+＊物理、特殊どちらでも計算をしてgが大きくなる方を選ぶ
+"""
 
-# Eval_PTの結果のリストを引数にとり、敵の数が少ない順に並び替え、不利な敵がN個以下のPTの評価表を出力
-# def output_eval_PT(allevals,n):
 
 if __name__ == '__main__':
-    allPattarns = jointPTNs(want2use,party(1),1,2)
-    coutions=8
-
-    nowtime = dt.now().strftime('%m%d_%H%M%S')
-    os.mkdir(nowtime)
-    f = open(nowtime+'/partyAnalysis.txt', 'w') # 書き込みモードで開く
-    f.write('# -*- coding: utf-8 -*-\n')
-    j = 0
-    for i in ranlen(allPattarns):
-
-        Evaled = eval_PT(allPattarns[i],top20)
-        if Evaled[0]<= coutions:
-            print(str(i+1)+'/'+str(len(allPattarns))+'...!')
-            j = j + 1
-            evaled_df(allPattarns[i],top20).to_csv(nowtime+'/'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')#,encoding='shift_jis')
-            export_diffence_aisho(allPattarns[i],nowtime,Evaled[0],j)
-            f.write(str(j)+'--'+str(Evaled[:3])+'\n')
-        else:
-            print(str(i)+'/'+str(len(allPattarns)))
-    f.close()
-    export_diffence_aisho(party(1),nowtime,'all',0)
-
-    # a = eval_PT(standby,top20)
-
-
-
-    # export_diffence_aisho([top20[0],standby[0]])
-    # nowtime = dt.now().strftime('%m%d_%H%M%S')
-    # df.to_csv(nowtime+'.csv',sep=',')
+    print(max(1,2))
