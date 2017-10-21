@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import math
 from datetime import datetime as dt
 from functools import reduce
 from itertools import combinations,product
@@ -86,7 +87,7 @@ def dfc_type2list(t_kana):
 # dfc_type2list('フェアリー')
 # dfc_type2list('ゴースト')
 # csv出力
-def export_defffence_aisho(PT,time,coutions,i):
+def export_deffence_aisho(PT,time,coutions,i):
     # 表を出力。カナでタイプ受け取り info=pokemonid
     def dfc_aisho(pokemon):
         lis1 = dfc_type2list(pokemon[2])
@@ -208,16 +209,19 @@ def eval_function(pokemon1,pokemon2):
     mimi1 = is_mimikkyu(pokemon1)
     mimi2 = is_mimikkyu(pokemon2)
 
-    fp = eval_g(a1,b2,h2,typ12)*(1/eval_g(a2,b1,h1,typ21) + sp_cor(s1,s2,mimi1) )
-    fs = eval_g(c1,d2,h2,typ12)*(1/eval_g(c2,d1,h1,typ21) + sp_cor(s1,s2,mimi1) )
-    print(typ12)
-    print(mimi1)
-    print(eval_g(a1,b2,h2,typ12))
-    print(eval_g(c1,d2,h2,typ12))
-    print(sp_cor(s1,s2,mimi1))
-    print(fp)
-    print(fs)
-    return max(fp,fs)
+    fp1 = eval_g(a1,b2,h2,typ12)*(1/eval_g(a2,b1,h1,typ21) + sp_cor(s1,s2,mimi1) )
+    fs1 = eval_g(c1,d2,h2,typ12)*(1/eval_g(c2,d1,h1,typ21) + sp_cor(s1,s2,mimi1) )
+    fp2 = eval_g(a2,b1,h1,typ21)*(1/eval_g(a1,b2,h2,typ12) + sp_cor(s2,s1,mimi2) )
+    fs2 = eval_g(c2,d1,h1,typ21)*(1/eval_g(c1,d2,h2,typ12) + sp_cor(s2,s1,mimi2) )
+    # print(typ12)
+    # print(mimi1)
+    # print(eval_g(a1,b2,h2,typ12))
+    # print(eval_g(c1,d2,h2,typ12))
+    # print(sp_cor(s1,s2,mimi1))
+    # print(fp)
+    # print(fs)
+    # print('---')
+    return math.ceil((max(fp1,fs1)-max(fp2,fs2))/(max(fp1,fs1)+max(fp2,fs2))*5+5)
 
 def evaled_df(pokemon1s,pokemon2s):
         eval_list = [[eval_function(pokemon1s[i],pokemon2s[j]) for i in ranlen(pokemon1s) ]for j in ranlen(pokemon2s)]
@@ -229,8 +233,7 @@ def evaled_df(pokemon1s,pokemon2s):
 # 環境に対するパーティーの評価　
 def eval_PT(PT,Env):
     df = evaled_df(PT,Env)
-    #NOTE : ここのイコールはとったらeval=0も許容
-    caution = df.where(df<=0).dropna().index
+    caution = df.where(df<=7).dropna().index
     PTmenber = reduce(lambda x,y: x+','+y ,list( map( lambda arr: list(arr)[1],PT)))
     # print(PTmenber)
     # print(list( map( lambda arr: list(arr)[1],PT)))
@@ -238,38 +241,37 @@ def eval_PT(PT,Env):
     return (len(caution),PTmenber,list(caution),PT) #実際に処理するとき
 
 
-if __name__ == '__main__':
-    #hapinasu de hikaku
-    print(party(1)[2][2:13])
-    print(eval_function(party(1)[2],top20[0]))
-    print(top20[0][2:13])
-    print(eval_function(top20[0],party(1)[2]))
-    # print(evaled_df(party(1),top20))
-    # print(evaled_df_by_type(party(1),[top20[0]]))
+# if __name__ == '__main__':
+#     #hapinasu de hikaku
+#     print(party(2)[0][2:13])
+#     print(eval_function(party(2)[0],party(2)[1]))
+#     print(party(2)[1][2:13])
+#     print(eval_function(party(2)[1],party(2)[0]))
+#     print(evaled_df(party(2),party(2)))
+#     # print(evaled_df_by_type(party(1),[top20[0]]))
 
 
 # Eval_PTの結果のリストを引数にとり、敵の数が少ない順に並び替え、不利な敵がN個以下のPTの評価表を出力
-# def output_eval_PT(allevals,n):
-#
-# if __name__ == '__main__':
-#     allPattarns = jointPTNs(want2use,party(1),1,2)
-#     coutions=8
-#
-#     nowtime = dt.now().strftime('%m%d_%H%M%S')
-#     os.mkdir(nowtime)
-#     f = open(nowtime+'/partyAnalysis.txt', 'w') # 書き込みモードで開く
-#     f.write('# -*- coding: utf-8 -*-\n')
-#     j = 0
-#     for i in ranlen(allPattarns):
-#
-#         Evaled = eval_PT(allPattarns[i],top20)
-#         if Evaled[0]<= coutions:
-#             print(str(i+1)+'/'+str(len(allPattarns))+'...!')
-#             j = j + 1
-#             evaled_df(allPattarns[i],top20).to_csv(nowtime+'/'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')#,encoding='shift_jis')
-#             export_diffence_aisho(allPattarns[i],nowtime,Evaled[0],j)
-#             f.write(str(j)+'--'+str(Evaled[:3])+'\n')
-#         else:
-#             print(str(i)+'/'+str(len(allPattarns)))
-#     f.close()
-#     export_diffence_aisho(party(1),nowtime,'all',0)
+
+if __name__ == '__main__':
+    allPattarns = jointPTNs(party(4),party(1),0,6)
+    coutions=30
+
+    nowtime = dt.now().strftime('%m%d_%H%M%S')
+    os.mkdir(nowtime)
+    f = open(nowtime+'/partyAnalysis.txt', 'w') # 書き込みモードで開く
+    f.write('# -*- coding: utf-8 -*-\n')
+    j = 0
+    for i in ranlen(allPattarns):
+
+        Evaled = eval_PT(allPattarns[i],top20)
+        if Evaled[0]<= coutions:
+            print(str(i+1)+'/'+str(len(allPattarns))+'...!')
+            j = j + 1
+            evaled_df(allPattarns[i],top20).to_csv(nowtime+'/'+str(Evaled[0])+'_'+str(j)+'.csv',sep=',')#,encoding='shift_jis')
+            export_deffence_aisho(allPattarns[i],nowtime,Evaled[0],j)
+            f.write(str(j)+'--'+str(Evaled[:3])+'\n')
+        else:
+            print(str(i+1)+'/'+str(len(allPattarns)))
+    f.close()
+    export_deffence_aisho(party(1),nowtime,'all',0)

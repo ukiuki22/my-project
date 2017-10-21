@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.random import *
 import matplotlib.pyplot as plt
-from functools import reduce 
+from functools import reduce
 
 #気体のモデル
 N  = 1000
@@ -16,17 +16,17 @@ X0 = list(rand(2*N)*2-1) #[0.5 for i in range(2*N)]#
 #InitialVelocity
 V0 = list(randn(2*N))
 
-plt.style.use('ggplot') 
+plt.style.use('ggplot')
 fig = plt.figure()
 
 
 
-##### MOTION ##### 
+##### MOTION #####
 update = lambda X,V : list( map(lambda x,v: x+v*dt , X,V))
 
 def wall(X,V): #V = wall(X,V) 壁による反射
   for i in rN:
-    V[i] = -V[i] if abs(X[i])>L else V[i] 
+    V[i] = -V[i] if abs(X[i])>L else V[i]
   return V
 
 
@@ -39,8 +39,8 @@ def wall(X,V): #V = wall(X,V) 壁による反射
 def xDistribute(X):
   X1 = [X[2*i  ] for i in rN]
   Y1 = [X[2*i+1] for i in rN]
-  p = lambda x : x > 0 
-  n = lambda x : x < 0 
+  p = lambda x : x > 0
+  n = lambda x : x < 0
   return len( list( filter( p ,X1)))
 
 #壁にぶつかる粒子の数
@@ -78,10 +78,10 @@ def main(num):
 
 def plotf(i,X,option):
   x = [X[2*i  ] for i in rN]
-  y = [X[2*i+1] for i in rN]  
+  y = [X[2*i+1] for i in rN]
 
   ax = fig.add_subplot(111,aspect=1.0)
-  ax.scatter(x,y,color='orange',s=1) 
+  ax.scatter(x,y,color='orange',s=1)
   ax.set_xlim(-L*1.1,L*1.1)
   ax.set_ylim(-L*1.1,L*1.1)
 
