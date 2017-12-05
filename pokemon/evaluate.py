@@ -233,7 +233,7 @@ def evaled_df(pokemon1s,pokemon2s):
 # 環境に対するパーティーの評価　
 def eval_PT(PT,Env):
     df = evaled_df(PT,Env)
-    caution = df.where(df<=7).dropna().index
+    caution = df.where(df<=5).dropna().index
     PTmenber = reduce(lambda x,y: x+','+y ,list( map( lambda arr: list(arr)[1],PT)))
     # print(PTmenber)
     # print(list( map( lambda arr: list(arr)[1],PT)))
@@ -254,8 +254,9 @@ def eval_PT(PT,Env):
 # Eval_PTの結果のリストを引数にとり、敵の数が少ない順に並び替え、不利な敵がN個以下のPTの評価表を出力
 
 if __name__ == '__main__':
-    allPattarns = jointPTNs(party(4),party(1),0,6)
-    coutions=30
+    party_ = party(6)
+    allPattarns = jointPTNs(party(1),party_,0,5)
+    coutions=0
 
     nowtime = dt.now().strftime('%m%d_%H%M%S')
     os.mkdir(nowtime)
@@ -274,4 +275,4 @@ if __name__ == '__main__':
         else:
             print(str(i+1)+'/'+str(len(allPattarns)))
     f.close()
-    export_deffence_aisho(party(1),nowtime,'all',0)
+    export_deffence_aisho(party_,nowtime,'all',0)
