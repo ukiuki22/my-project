@@ -79,7 +79,7 @@ offline.plot(fig,filename='test.html')
 plt.plot(t_range/np.pi,output[:,0])
 plt.plot(t_range/np.pi,output[:,1])
 plt.plot(t_range/np.pi,output[:,2])
-plt.show()
+# plt.show() 
 
 # fig = plt.figure()
 # ax1 = fig.add_subplot(211)
