@@ -2,10 +2,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-xlsxPath = '/Users/kiichi/Dropbox/my-project/yuka/before2.xlsx'
+xlsxPath = '/Users/kiichi/Dropbox/my-project/leaf/20171201_.LINE.xlsx'
+# xlsxPath = '/Users/kiichi/Dropbox/my-project/leaf/20171204正しいファイル_.LINE.xlsx'
+# xlsxPath = '/Users/kiichi/Dropbox/my-project/yuka/before2.xlsx'
 read = lambda name :pd.read_excel(xlsxPath, sheetname=name)
 
-df1 = read('20171204_ (外気CO2でリーク補正)')
+df1 = read('20171201_')# (外気CO2でリーク補正)')
 df2 = read('外気CO2')
 
 #外気CO2でリーク補正シートから、CO2Rを含む行を検索し、該当する行番号と、umlのタプルからなるリストを返す
@@ -47,8 +49,9 @@ def makeSubDataFrame(df,number):
     # print(addColumns)
     return addColumns
 
+
 #    計算式
-PhoUofunc = lambda       CO2R,CO2S,CO2atm,H2OR,H2OS,fda,CndCO2,Trans: (CO2R-CO2atm*(1000-H2OR)/(1000-H2OS))*fda
+PhoUofunc = lambda       CO2R,CO2S,CO2atm,H2OR,H2OS,fda,CndCO2,Trans: (CO2R-( CO2S - (0.008076*(CO2atm-CO2R)+0.0753)  )*(1000-H2OR)/(1000-H2OS))*fda
 Cifunc    = lambda PhoUo,CO2R,CO2S,CO2atm,H2OR,H2OS,fda,CndCO2,Trans:((CndCO2-Trans/2)*CO2S-PhoUo)/(CndCO2+Trans/2)
 
 outputA  = []
@@ -78,10 +81,10 @@ for number in range(1,len(findCO2R(df1))+1):
 
 forplot = pd.DataFrame([outputA,outputCi],index=['A','Ci'])
 # print(forplot)
-forplot.to_csv(output.csv)
+forplot.to_csv('output.csv')
 
 plt.scatter(outputCi,outputA)
-# plt.show()
+plt.show()
 
 
 # subdf.to_csv('test.csv')
