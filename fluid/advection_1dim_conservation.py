@@ -1,6 +1,11 @@
 # -＊- coding: UTF-8 -＊-
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+fig = plt.figure()
+ims = []
+
 
 """
 風上差分で1次元移流方程式を解く/保存形式に書き換え
@@ -36,12 +41,13 @@ res = []
 for i in range(nT):
     if (i%40==0):
         # res += [u[1:-1]]
-        plt.plot(u,label=str(i*dt)+' sec')
+        im = plt.plot(u,label=str(i*dt)+' sec')
+        ims.append(im)
 
     u_next = step(u)
     u      = u_next
 
 
 # print(u)
-plt.legend()
+# plt.legend()
 plt.show()
