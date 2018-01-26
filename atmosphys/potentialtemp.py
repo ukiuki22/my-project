@@ -56,6 +56,7 @@ plt.clabel(C, inline=1, fontsize=10)
 plt.clabel(D, inline=1, fontsize=10)
 plt.show()
 
-# mu_p0 = lambda t : mu(1,t)
-# plt.plot(set_t,list(map(mu_p0,set_t)))
+# # 地上の飽和大気の潜熱を全部放出して加熱
+# ept_p0 = lambda t : T0*ePT(1,t)-273 #℃まで変換
+# plt.plot(T0*set_t-273,list(map(ept_p0,set_t)))
 # plt.show()
