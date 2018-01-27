@@ -80,7 +80,7 @@ def step(field) :
     g_back   = lambda u,c,i,j : 0.5 * ( ( f(u,c,i  ,j)+ f(u,c,i,j-1) ) - abs(c[i][j]) * (u[i][j]  -u[i][j-1]) )
 
     update = lambda u,cx,cy,i,j : u[i][j] -  (dt/dx) * (f_foward(u,cx,i,j) - f_back(u,cx,i,j)) \
-                                          -  (dt/dy) * (g_foward(u,cy,i,j) - g_back(u,cy,i,j))
+                                          -  (dt/dy) * (g_foward(u,cy,i,j) - g_back(u,cy,i,j)) #+ dt * cy[i][j]
 
     next_rho = np.zeros([nX+2, nY+2])
 
@@ -113,15 +113,18 @@ number = 1
 os.mkdir('./'+nowtime)
 field = initCondition()
 
-loop = 400
+loop = 100
 for i in range(loop):
     # X, Y = np.meshgrid(x2,y2)
-    # U, V = field
+    # U, V = field s
     # # U, V = initCondition()
     # M = np.array([[np.sqrt(U[i][j]**2+V[i][j]**2) for j in range(nX+2)] for i in range(nY+2)])
 
-    if 100*i%loop == 0 :
-        plt.imshow(field)
+    if 5*i%loop == 0 :
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        im = ax.imshow(field, interpolation='none')
+        fig.colorbar(im)
         # plt.quiver( X, Y, U, V, M, units='x', pivot='mid',scale=1)
         plt.savefig('./'+nowtime+'/'+"%03.f"%(number))
         number += 1
@@ -129,6 +132,9 @@ for i in range(loop):
 
     new_field = step(field)
     field = new_field
+
+# plt.show()
+
 
 # plt.imshow(field)
 # plt.show()
