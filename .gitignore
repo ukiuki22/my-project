@@ -5,6 +5,7 @@
 *.csv
 *.vtk
 *.txt
+*.gif
 */__pycache__/*
 */*/__pycache__/*
 ignore_files/*
