@@ -12,7 +12,7 @@ ims = []
 
 dx,nX =  1.00 ,100 #m
 dt,nT =  0.01 ,4000 #sec
-c = 0 #100 #m/s
+c = 1 #100 #m/s
 
 x = np.linspace(0,nX*dx,nX)
 # t = np.linspace(0,nT*dt,nT)
@@ -63,5 +63,5 @@ for i in range(nT):
 # plt.plot(momentum)
 # plt.legend()
 ani = animation.ArtistAnimation(fig, ims, interval=50)
-# plt.show()
-ani.save("burgers2.gif", writer="imagemagick")
+plt.show()
+# ani.save("burgers2.gif", writer="imagemagick")
