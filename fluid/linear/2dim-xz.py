@@ -56,20 +56,27 @@ def step(field) :
     update_u = lambda i,j : u[i][j] +  dPx(i,j) /rho0        * dt
     update_r = lambda i,j : r[i][j] -  rho0/H * w[i][j]      * dt
 
-    upper_p = lambda i,j : P[i][j] - g * rho[i][j] * dz
+    upper_p = lambda i,j : P[i][j] - g * r[i][j] * dz
     upper_w = lambda i,j : w[i][j] - (u[i+1][j]-u[i][j])/dx * dz
 
     next_u,next_r = np.zeros([nX+2, nZ+2]) , np.zeros([nX+2, nZ+2])
+    next_p,next_w = np.zeros([nX+2, nZ+2]) , np.zeros([nX+2, nZ+2])
 
     for i in range(1,nX+1):
         for j in range(1,nZ+1):
             next_u[i][j] = update_u(i,j)
             next_r[i][j] = update_r(i,j)
 
-    return (next_u,next_r,P,w)
+    for j in range(1,nZ+1):
+        for i in range(1,nX+1):
+            next_p[i][j] = upper_p(i,j)
+            next_w[i][j] = upper_w(i,j)
+
+    return (next_u,next_r,next_p,next_w)
 
 nowtime = datetime.now().strftime('%m%d_%H%M%S')
-number = 0
+number_s = 0
+number_v = 0
 os.mkdir('./'+nowtime+'s')
 os.mkdir('./'+nowtime+'v')
 field = initCondition()
@@ -78,7 +85,7 @@ U0, Rho0, P0, W0= field
 loop = 10
 for i in range(loop):
     U, Rho, P, W= field
-    if 10*i%loop == 0 :
+    if 5*i%loop == 0 :
         X, Z = np.meshgrid(x2,z2)
         M = np.array([[np.sqrt(U[i][j]**2+W[i][j]**2) for j in range(nX+2)] for i in range(nZ+2)])
 
@@ -86,17 +93,17 @@ for i in range(loop):
         plt.savefig('./'+nowtime+'v/'+"%03.f"%(number))
         # plt.show()
         plt.clf()
-        number +=1
+        number_s +=1
 
-    # if 5*i%loop == 0 :
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111)
-    #     im = ax.imshow(Rho, interpolation='none')
-    #     fig.colorbar(im)
-    #     # plt.quiver( X, Y, U, V, M, units='x', pivot='mid',scale=1)
-    #     plt.savefig('./'+nowtime+'s/'+"%03.f"%(number))
-    #     number += 1
-    #     plt.clf()
+    if 5*i%loop == 0 :
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        im = ax.imshow(Rho, interpolation='none')
+        fig.colorbar(im)
+        # plt.quiver( X, Y, U, V, M, units='x', pivot='mid',scale=1)
+        plt.savefig('./'+nowtime+'s/'+"%03.f"%(number))
+        number_v += 1
+        plt.clf()
 
     new_field = step(field)
     field = new_field
