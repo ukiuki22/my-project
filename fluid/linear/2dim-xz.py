@@ -82,7 +82,7 @@ os.mkdir('./'+nowtime+'v')
 field = initCondition()
 U0, Rho0, P0, W0= field
 
-loop = 10
+loop = 20
 for i in range(loop):
     U, Rho, P, W= field
     if 5*i%loop == 0 :
@@ -90,10 +90,10 @@ for i in range(loop):
         M = np.array([[np.sqrt(U[i][j]**2+W[i][j]**2) for j in range(nX+2)] for i in range(nZ+2)])
 
         plt.quiver( X, Z, U, W, M, units='x', pivot='mid',scale=0.1)
-        plt.savefig('./'+nowtime+'v/'+"%03.f"%(number))
+        plt.savefig('./'+nowtime+'v/'+"%03.f"%(number_v))
         # plt.show()
         plt.clf()
-        number_s +=1
+        number_v +=1
 
     if 5*i%loop == 0 :
         fig = plt.figure()
@@ -101,8 +101,8 @@ for i in range(loop):
         im = ax.imshow(Rho, interpolation='none')
         fig.colorbar(im)
         # plt.quiver( X, Y, U, V, M, units='x', pivot='mid',scale=1)
-        plt.savefig('./'+nowtime+'s/'+"%03.f"%(number))
-        number_v += 1
+        plt.savefig('./'+nowtime+'s/'+"%03.f"%(number_s))
+        number_s += 1
         plt.clf()
 
     new_field = step(field)
