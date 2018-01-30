@@ -10,7 +10,7 @@ xz平面　--内部重力波を起こす--
 """
 
 x_max,z_max = 20*1e3,10*1e3 #m
-nX ,nZ = 100,50
+nX ,nZ = 10*5,5*5
 dx,dz = x_max/nX , z_max/nZ
 dt,nT =  10 ,10 #sec
 
@@ -40,21 +40,19 @@ def initCondition() :
             u[i][j]   = init_u(i,j)
             r[i][j]   = init_r(i,j)
             w[i][j]   = init_w(i,j)
-            P[i][j] = init_P(i,j)
+            P[i][j]   = init_P(i,j)
     return (u,r,P,w)
 
 def bound(field):
     (u,r,P,w) = field
-
     for j in range(nZ+2):
-        # u[0][j]=u[-2][j]
-        # u[-1][j]=u[1][j]
         # w[0][j]=w[-2][j]
         # w[-1][j]=w[1][j]
         # P[0][j]=P[-2][j]
         # P[-1][j]=P[1][j]
         # r[0][j]=r[-2][j]
         # r[-1][j]=r[1][j]
+
         u[0][j]=u[1][j]
         u[-1][j]=u[-2][j]
         w[0][j]=w[1][j]
@@ -66,32 +64,45 @@ def bound(field):
 
     for i in range(nX+2):
         u[i][ 0]= 0
-        u[i][-1]= 0 #u[i][-2]
+        u[i][-1]= u[i][-2]
         w[i][ 0]= 0
-        w[i][-1]= 0 #w[i][-2]
+        w[i][-1]= w[i][-2]
         # P[i][ 0]= P[i][-2]
         # P[i][-1]= P[i][1]
-        P[i][ 1]= 0#P[i][ 1]
-        P[i][-2]= 0#P[i][-2]
+        P[i][ 1]= P[i][ 1]
+        P[i][-2]= P[i][-2]
 
-        r[i][ 0]= 0 #r[i][ 1]
-        r[i][-1]= 0 #r[i][-2]
+        r[i][ 0]= r[i][ 1]
+        r[i][-1]= r[i][-2]
+
+    # for i in range(nX,nX+2):
+    #     for j in range(nZ+2):
+    #         u[i][j]  =  0
+    #         w[i][j]   = 0
+
     return (u,r,P,w)
 
 
 def step(field) :
     (u,r,P,w) = field
 
-    dPx = lambda i,j: min((P[i+1][j] - P[i][j-1])/(2*dx),(P[i+1][j] - P[i][j])/dx,(P[i][j] - P[i][j-1])/dx)
+    def sgn(x):
+        if x>0 : return 1
+        elif x<0 : return-1
+        else : return 0
+
+    dPx = lambda i,j: 1/dx * min(abs(P[i+1][j] - P[i][j]),abs(P[i][j] - P[i][j-1]))*sgn(P[i][j] - P[i][j-1])
 
     update_u = lambda i,j : u[i][j] +  dPx(i,j) /rho0        * dt
     update_r = lambda i,j : r[i][j] -  rho0*Nb**2/g * w[i][j]      * dt
 
     upper_p = lambda i,j : P[i][j-1] - g * r[i][j-1] * dz
-    upper_w = lambda i,j : w[i][j-1] - (u[i+1][j-1]-u[i][j-1])/dx * dz
+    upper_w1 = lambda i,j : w[i][j-1] - (u[i+1][j-1]-u[i][j-1])/dx * dz
+    upper_w2 = lambda i,j : w[i][j-1] - (u[i][j-1]-u[i-1][j-1])/dx * dz
 
     lower_p = lambda i,j : P[i][j+1] + g * r[i][j] * dz
-    lower_w = lambda i,j : w[i][j+1] + (u[i][j]-u[i-1][j])/dx * dz
+    lower_w1 = lambda i,j : w[i][j+1] + (u[i][j]-u[i-1][j])/dx * dz
+    lower_w2 = lambda i,j : w[i][j+1] + (u[i+1][j]-u[i][j])/dx * dz
 
     next_u,next_r = np.zeros([nX+2, nZ+2]) , np.zeros([nX+2, nZ+2])
     next_p,next_w = np.zeros([nX+2, nZ+2]) , np.zeros([nX+2, nZ+2])
@@ -104,7 +115,9 @@ def step(field) :
     for j in range(1,nZ+1):
         for i in range(1,nX+1):
             next_p[i][j] = (upper_p(i,j)+lower_p(i,j))/2
-            next_w[i][j] = (upper_w(i,j)+lower_w(i,j))/2
+            next_w[i][j] = sgn(upper_w1(i,j))*min(abs(upper_w1(i,j)),abs(lower_w1(i,j)),abs(upper_w2(i,j)),abs(lower_w2(i,j)))
+            # if(u[i][j]<0): next_w[i][j] = lower_w(i,j)
+            # else : next_w[i][j] = upper_w(i,j)
 
     return (next_u,next_r,next_p,next_w)
 
@@ -116,29 +129,37 @@ os.mkdir('./'+nowtime+'v')
 field = initCondition()
 U0, Rho0, P0, W0= field
 
+# fig = plt.figure()
+# ax = fig.add_subplot(111)
+# im0 = ax.imshow(Rho0.T, interpolation='none')
+
 loop = 100
 for i in range(loop):
+    new_field = bound(step(field))
+    field = new_field
     U, Rho, P, W= field
-    if 2*i%loop == 0 :
-        X, Z = np.meshgrid(x2,z2)
-        M = np.array([[np.sqrt(U[i][j]**2+W[i][j]**2) for j in range(nZ+2)] for i in range(nX+2)])
 
-        plt.quiver( X, Z, U, W, M, units='x') #, pivot='mid',scale=0.05)
-        plt.savefig('./'+nowtime+'v/'+"%03.f"%(number_v))
-        # plt.clf()
-        number_v +=1
-
-    if 2*i%loop == 0 :
+    if 10*i%loop == 0 :
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        im = ax.imshow(P.T, interpolation='none')
-        fig.colorbar(im)
+        im = ax.imshow(Rho.T, interpolation='none')
+        im0 = ax.imshow(Rho0.T)
+        fig.colorbar(im0)
         plt.savefig('./'+nowtime+'s/'+"%03.f"%(number_s))
         number_s += 1
         plt.clf()
 
-    new_field = bound(step(field))
-    field = new_field
+    if 10*i%loop == 0 :
+        X, Z = np.meshgrid(x2,z2)
+        M = np.array([[np.sqrt(U[i][j]**2+W[i][j]**2) for j in range(nZ+2)] for i in range(nX+2)])
+        # plt.imshow(W)
+        plt.quiver( X, Z, U.T, W.T, M.T, units='x', pivot='mid',scale=0.05)
+        plt.savefig('./'+nowtime+'v/'+"%03.f"%(number_v))
+        plt.clf()
+        number_v +=1
+        # print(i)
+
+# print(field)
 
 # fig = plt.figure()
 # ax = fig.add_subplot(111)
