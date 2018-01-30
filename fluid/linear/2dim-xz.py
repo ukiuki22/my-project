@@ -47,30 +47,33 @@ def bound(field):
     (u,r,P,w) = field
 
     for j in range(nZ+2):
-        u[0][j]=u[-2][j]
-        u[-1][j]=u[1][j]
-        w[0][j]=w[-2][j]
-        w[-1][j]=w[1][j]
-        P[0][j]=P[-2][j]
-        P[-1][j]=P[1][j]
-        r[0][j]=r[-2][j]
-        r[-1][j]=r[1][j]
-        # u[0][j]=u[1][j]
-        # u[-1][j]=u[-2][j]
-        # w[0][j]=w[1][j]
-        # w[-1][j]=w[-2][j]
-        # P[0][j]=P[1][j]
-        # P[-1][j]=P[-2][j]
-        # r[0][j]=r[1][j]
-        # r[-1][j]=r[-2][j]
+        # u[0][j]=u[-2][j]
+        # u[-1][j]=u[1][j]
+        # w[0][j]=w[-2][j]
+        # w[-1][j]=w[1][j]
+        # P[0][j]=P[-2][j]
+        # P[-1][j]=P[1][j]
+        # r[0][j]=r[-2][j]
+        # r[-1][j]=r[1][j]
+        u[0][j]=u[1][j]
+        u[-1][j]=u[-2][j]
+        w[0][j]=w[1][j]
+        w[-1][j]=w[-2][j]
+        P[0][j]=P[1][j]
+        P[-1][j]=P[-2][j]
+        r[0][j]=r[1][j]
+        r[-1][j]=r[-2][j]
 
     for i in range(nX+2):
         u[i][ 0]= 0
         u[i][-1]= 0 #u[i][-2]
         w[i][ 0]= 0
         w[i][-1]= 0 #w[i][-2]
-        P[i][ 0]= 0#P[i][ 1]
-        P[i][-1]= 0#P[i][-2]
+        # P[i][ 0]= P[i][-2]
+        # P[i][-1]= P[i][1]
+        P[i][ 1]= 0#P[i][ 1]
+        P[i][-2]= 0#P[i][-2]
+
         r[i][ 0]= 0 #r[i][ 1]
         r[i][-1]= 0 #r[i][-2]
     return (u,r,P,w)
@@ -79,7 +82,7 @@ def bound(field):
 def step(field) :
     (u,r,P,w) = field
 
-    dPx = lambda i,j: (P[i+1][j] - P[i][j-1])/(2*dx)
+    dPx = lambda i,j: min((P[i+1][j] - P[i][j-1])/(2*dx),(P[i+1][j] - P[i][j])/dx,(P[i][j] - P[i][j-1])/dx)
 
     update_u = lambda i,j : u[i][j] +  dPx(i,j) /rho0        * dt
     update_r = lambda i,j : r[i][j] -  rho0*Nb**2/g * w[i][j]      * dt
@@ -100,8 +103,8 @@ def step(field) :
 
     for j in range(1,nZ+1):
         for i in range(1,nX+1):
-            next_p[i][j] = (lower_p(i,j)+upper_p(i,j))/2
-            # next_w[i][j] = upper_w(i,j)
+            next_p[i][j] = (upper_p(i,j)+lower_p(i,j))/2
+            next_w[i][j] = (upper_w(i,j)+lower_w(i,j))/2
 
     return (next_u,next_r,next_p,next_w)
 
@@ -113,27 +116,26 @@ os.mkdir('./'+nowtime+'v')
 field = initCondition()
 U0, Rho0, P0, W0= field
 
-loop = 10
+loop = 100
 for i in range(loop):
     U, Rho, P, W= field
-    if 1*i%loop == 0 :
+    if 2*i%loop == 0 :
         X, Z = np.meshgrid(x2,z2)
         M = np.array([[np.sqrt(U[i][j]**2+W[i][j]**2) for j in range(nZ+2)] for i in range(nX+2)])
-    #
-    #     plt.quiver( X, Z, U, W, M, units='x') #, pivot='mid',scale=0.05)
-    #     # plt.savefig('./'+nowtime+'v/'+"%03.f"%(number_v))
-    #     # plt.clf()
-    #     number_v +=1
 
-    # if 1*i%loop == 0 :
-    #     fig = plt.figure()
-    #     ax = fig.add_subplot(111)
-    #     im = ax.imshow(P.T, interpolation='none')
-    #     fig.colorbar(im)
-    #     # plt.savefig('./'+nowtime+'s/'+"%03.f"%(number_s))
-    #     number_s += 1
-        # plt.show()
+        plt.quiver( X, Z, U, W, M, units='x') #, pivot='mid',scale=0.05)
+        plt.savefig('./'+nowtime+'v/'+"%03.f"%(number_v))
         # plt.clf()
+        number_v +=1
+
+    if 2*i%loop == 0 :
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        im = ax.imshow(P.T, interpolation='none')
+        fig.colorbar(im)
+        plt.savefig('./'+nowtime+'s/'+"%03.f"%(number_s))
+        number_s += 1
+        plt.clf()
 
     new_field = bound(step(field))
     field = new_field
@@ -143,8 +145,8 @@ for i in range(loop):
 # im = ax.imshow(P.T, interpolation='none')
 # fig.colorbar(im)
 
-plt.quiver( X, Z, U, W, M, units='x') #, pivot='mid',scale=0.05)
-plt.show()
+# plt.quiver( X, Z, U, W, M, units='x') #, pivot='mid',scale=0.05)
+# plt.show()
 
 # print(U-U0)
 # print(Rho-Rho0)
