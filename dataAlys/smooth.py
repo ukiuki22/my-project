@@ -20,4 +20,5 @@ daystime = [i/24 for i in range(24*7)]
 # plt.plot(daystime,list(map(lambda x:x+0.05,data3)))
 # plt.plot(daystime,list(map(lambda x:x+0.1,data22)))
 plt.plot(daystime,list(map(lambda x:x,data222)))
+plt.plot(daystime,smooth(2,smooth(2,smooth(1,data))))
 plt.show()
